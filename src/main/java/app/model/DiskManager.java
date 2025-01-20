@@ -16,8 +16,8 @@ public class DiskManager {
     }
 
     // Add a new disk
-    public void addDisk(Disk disk) {
-        disks.add(disk);
+    public void addDisk(Point center, int radius, Color color) {
+        disks.add(new Disk(center, radius, color));
     }
 
     // Remove all disks and reset color palette
@@ -77,4 +77,5 @@ public class DiskManager {
         int dy = edge.y - center.y;
         return (int) Math.sqrt(dx * dx + dy * dy);
     }
+
 }
