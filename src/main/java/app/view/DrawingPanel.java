@@ -11,13 +11,14 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.util.Optional;
 
-class DrawingPanel extends JPanel implements MouseListener, MouseMotionListener {
+public class DrawingPanel extends JPanel implements MouseListener, MouseMotionListener {
     private DiskManager diskManager;
     private Point startPoint;
     private Point currentPoint;
     private Disk selectedDisk;
     private boolean isDrawing;
     private boolean isMoving;
+    private Point offset;
 
     public DrawingPanel() {
         diskManager = new DiskManager();
@@ -31,11 +32,6 @@ class DrawingPanel extends JPanel implements MouseListener, MouseMotionListener 
         setFocusable(true);
     }
 
-    public Object clearDisks() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'clearDisks'");
-    }
-
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -45,9 +41,9 @@ class DrawingPanel extends JPanel implements MouseListener, MouseMotionListener 
 
         // Draw disk preview while creating
         if (isDrawing && startPoint != null && currentPoint != null) {
-            int radius = calculateRadius(startPoint, currentPoint);
+            int radius = DiskManager.calculateRadius(startPoint, currentPoint);
             g.setColor(diskManager.getNextColor());
-            g.drawOval(
+            g.fillOval(
                     startPoint.x - radius,
                     startPoint.y - radius,
                     radius * 2,
@@ -56,38 +52,14 @@ class DrawingPanel extends JPanel implements MouseListener, MouseMotionListener 
 
         // Draw disk preview while moving
         if (isMoving && selectedDisk != null && currentPoint != null) {
-            // Draw temporary disk at new position
-            int radius = selectedDisk.getRadius();
             g.setColor(selectedDisk.getColor());
-            g.drawOval(
-                    currentPoint.x - radius,
-                    currentPoint.y - radius,
+            int radius = selectedDisk.getRadius();
+            g.fillOval(
+                    currentPoint.x - offset.x - radius,
+                    currentPoint.y - offset.y - radius,
                     radius * 2,
                     radius * 2);
         }
-    }
-
-    private int calculateRadius(Point startPoint2, Point currentPoint2) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'calculateRadius'");
-    }
-
-    @Override
-    public void mouseDragged(MouseEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'mouseDragged'");
-    }
-
-    @Override
-    public void mouseMoved(MouseEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'mouseMoved'");
-    }
-
-    @Override
-    public void mouseClicked(MouseEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'mouseClicked'");
     }
 
     @Override
@@ -102,6 +74,11 @@ class DrawingPanel extends JPanel implements MouseListener, MouseMotionListener 
                 Optional<Disk> disk = diskManager.getDiskAt(startPoint);
                 if (disk.isPresent()) {
                     selectedDisk = disk.get();
+                    // Calculate the offset between mouse position and disk center
+                    offset = new Point(
+                            startPoint.x - selectedDisk.getCenter().x,
+                            startPoint.y - selectedDisk.getCenter().y);
+                    diskManager.removeTopDiskAt(startPoint);
                     isMoving = true;
                 }
             } else {
@@ -117,19 +94,62 @@ class DrawingPanel extends JPanel implements MouseListener, MouseMotionListener 
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'mouseReleased'");
+        if (isDrawing) {
+            // Create new disk
+            if (startPoint != null && currentPoint != null) {
+                int radius = DiskManager.calculateRadius(startPoint, currentPoint);
+                if (radius > 0) {
+                    diskManager.addDisk(new Disk(startPoint, radius, diskManager.getNextColor()));
+                }
+            }
+            isDrawing = false;
+        } else if (isMoving && selectedDisk != null) {
+            Point newCenter = new Point(
+                    e.getPoint().x - offset.x,
+                    e.getPoint().y - offset.y);
+            diskManager.addDisk(new Disk(newCenter, selectedDisk.getRadius(), selectedDisk.getColor()));
+            isMoving = false;
+            selectedDisk = null;
+        }
+
+        startPoint = null;
+        currentPoint = null;
+        repaint();
+    }
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+        currentPoint = e.getPoint();
+        repaint();
+    }
+
+    @Override
+    public void mouseMoved(MouseEvent e) {
+        // Not needed for this implementation
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent e) {
+        // Not needed for this implementation
     }
 
     @Override
     public void mouseEntered(MouseEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'mouseEntered'");
+        // Not needed for this implementation
     }
 
     @Override
     public void mouseExited(MouseEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'mouseExited'");
+        // Not needed for this implementation
+    }
+
+    public void clearDisks() {
+        diskManager.clearDisks();
+        repaint();
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        return new Dimension(800, 600);
     }
 }
